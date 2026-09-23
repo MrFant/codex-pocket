@@ -1,0 +1,54 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import { RequestJournal } from "../lib/request-journal.mjs";
+
+test("deduplicates concurrent writes, retains their result after restart, and rejects changed payloads", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "pocket-requests-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const filename = path.join(directory, "requests.sqlite");
+  let journal = new RequestJournal(filename);
+  let executions = 0;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const operation = async () => { executions += 1; await gate; return { turn: { id: "turn-once" } }; };
+  const first = journal.execute("same-id", { text: "hello", model: "test" }, operation);
+  const second = journal.execute("same-id", { model: "test", text: "hello" }, operation);
+  assert.equal(journal.get("same-id").status, "pending");
+  release();
+  assert.deepEqual(await first, await second);
+  assert.equal(executions, 1);
+  await journal.close();
+  journal = new RequestJournal(filename);
+  assert.equal(journal.get("same-id").status, "confirmed");
+  assert.equal((await journal.execute("same-id", { text: "hello", model: "test" }, operation)).turn.id, "turn-once");
+  await assert.rejects(journal.execute("same-id", { text: "changed" }, operation), { code: "idempotency_conflict" });
+  assert.equal(executions, 1);
+  await journal.close();
+});
+
+test("interrupted and ambiguous writes never re-dispatch; definite rejections remain queryable", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "pocket-interrupted-"));
+  const filename = path.join(directory, "requests.sqlite");
+  let journal = new RequestJournal(filename);
+  let executions = 0;
+  const operation = () => { executions += 1; throw new Error("RPC transport disconnected after dispatch"); };
+  await assert.rejects(journal.execute("ambiguous", {}, operation), { code: "request_outcome_unknown" });
+  await assert.rejects(journal.execute("ambiguous", {}, operation), { code: "request_outcome_unknown" });
+  assert.equal(executions, 1);
+  await assert.rejects(journal.execute("rejected", {}, () => { throw Object.assign(new Error("Writer owned elsewhere"), { code: "thread_writer_conflict" }); }), { code: "thread_writer_conflict" });
+  assert.equal(journal.get("rejected").status, "failed");
+  await journal.close();
+  const db = new DatabaseSync(filename);
+  db.prepare("UPDATE requests SET status = 'pending' WHERE id = 'ambiguous'").run();
+  db.close();
+  journal = new RequestJournal(filename);
+  assert.equal(journal.get("ambiguous").status, "unknown");
+  await assert.rejects(journal.execute("ambiguous", {}, operation), { code: "request_outcome_unknown" });
+  assert.equal(executions, 1);
+  await journal.close();
+  await rm(directory, { recursive: true, force: true });
+});

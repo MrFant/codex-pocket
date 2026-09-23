@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="theme-color" content="#10120f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Codex Pocket" />
+    <link rel="manifest" href="/manifest.webmanifest?v=__BUILD__" />
+    <link rel="icon" href="/icon.svg?v=__BUILD__" type="image/svg+xml" />
+    <title>Codex Pocket</title>
+    <link rel="stylesheet" href="/styles.css?v=__BUILD__" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button id="menu-button" class="icon-button mobile-only" aria-label="打开会话列表">☰</button>
+        <a class="brand" href="/" aria-label="Codex Pocket 首页">
+          <span class="brand-mark">C</span>
+          <span>Codex Pocket</span>
+        </a>
+        <button id="connection-status" type="button" class="status-pill" data-status="connecting" aria-label="查看运行诊断" aria-haspopup="dialog">连接中</button>
+      </header>
+
+      <div class="workspace">
+        <aside id="sidebar" class="sidebar">
+          <div class="sidebar-header">
+            <div>
+              <p class="eyebrow">LOCAL THREADS</p>
+              <h1>会话</h1>
+            </div>
+            <button id="refresh-button" class="icon-button" aria-label="刷新会话">↻</button>
+          </div>
+          <button id="new-thread-button" class="new-thread-button" type="button">
+            <span aria-hidden="true">＋</span>
+            开始对话
+          </button>
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="search-input" type="search" placeholder="搜索会话" autocomplete="off" />
+          </label>
+          <label class="archive-toggle">
+            <input id="archive-checkbox" type="checkbox" />
+            <span>显示归档会话</span>
+          </label>
+          <button id="attention-filter" class="attention-filter" type="button" aria-pressed="false">待处理 · 0</button>
+          <div id="thread-list" class="thread-list" aria-live="polite"></div>
+        </aside>
+
+        <button id="sidebar-scrim" class="sidebar-scrim" aria-label="关闭会话列表"></button>
+
+        <main class="main-panel">
+          <div id="update-banner" class="update-banner hidden" role="status"><span id="update-message"></span><button id="apply-update" type="button">保存并刷新</button></div>
+          <div id="request-tray" class="request-tray hidden" aria-live="polite"></div>
+          <section id="empty-state" class="empty-state">
+            <div class="empty-orbit"><span>C</span></div>
+            <p class="eyebrow">YOUR COMPUTER, IN YOUR POCKET</p>
+            <h2>选择一个本地 Codex 会话</h2>
+            <p>通过 Tailscale 安全地继续 CLI 或 Desktop 中的工作。</p>
+          </section>
+
+          <section id="chat-view" class="chat-view hidden">
+            <div class="chat-header">
+              <div class="chat-heading">
+                <details class="thread-details"><summary>会话详情</summary><div class="chat-meta-row">
+                  <p id="thread-path" class="thread-path"></p>
+                  <div class="thread-id-field">
+                    <span class="thread-id-label">会话 ID</span>
+                    <code id="thread-id" title="">—</code>
+                    <button id="copy-thread-id-button" type="button" aria-label="复制会话 ID" title="复制会话 ID" disabled>复制</button>
+                  </div>
+                </div>
+                </details>
+                <div class="chat-title-row">
+                  <h2 id="thread-title">未命名会话</h2>
+                  <span id="thread-status" class="thread-state" data-state="unknown" hidden></span>
+                  <span id="writer-owner" class="writer-indicator hidden"></span>
+                </div>
+              </div>
+              <button id="stop-button" class="stop-button hidden">停止</button>
+            </div>
+
+            <div class="runtime-row"><span id="runtime-lease" class="hidden"></span><button id="release-button" type="button" class="hidden">释放会话</button></div>
+            <div id="thread-notice" class="thread-notice hidden" role="status"></div>
+            <div id="messages" class="messages" aria-live="polite"></div>
+
+            <button id="latest-button" class="latest-button hidden" type="button">回到最新 ↓</button>
+
+            <form id="composer" class="composer">
+              <details id="composer-options" class="composer-options"><summary id="composer-options-summary">对话设置</summary>
+              <div class="composer-settings">
+                <label>
+                  <span>模型</span>
+                  <select id="model-select" aria-label="选择模型">
+                    <option value="">正在加载…</option>
+                  </select>
+                </label>
+                <label>
+                  <span>思考深度</span>
+                  <select id="effort-select" aria-label="选择思考深度" disabled>
+                    <option value="">先选择模型</option>
+                  </select>
+                </label>
+                <button id="permission-button" class="permission-button" type="button" aria-haspopup="dialog">
+                  权限：工作区写入
+                </button>
+              </div>
+              </details>
+              <div id="image-attachments" class="image-attachments" aria-live="polite"></div>
+              <input id="image-input" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden />
+              <div class="composer-input">
+                <button id="attach-image" type="button" class="attach-image" aria-label="添加图片" title="添加图片">＋</button>
+                <textarea
+                  id="message-input"
+                  rows="1"
+                  maxlength="100000"
+                  placeholder="给 Codex 发送消息…"
+                  aria-label="消息"
+                ></textarea>
+                <button id="send-button" type="submit" class="send-button" aria-label="发送消息">↑</button>
+              </div>
+              <p id="draft-status" class="draft-status" aria-live="polite"></p>
+              <p id="composer-hint" class="composer-hint">发送新回合</p>
+            </form>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div
+      id="approval-tray"
+      class="approval-tray hidden"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="approval-panel-title"
+      aria-live="assertive"
+    ></div>
+
+    <dialog id="diagnostics-dialog" class="modal-dialog diagnostics-dialog" aria-labelledby="diagnostics-title">
+      <h2 id="diagnostics-title">运行诊断</h2>
+      <div id="diagnostics-content"></div>
+      <details id="maintenance-options" class="maintenance-options"><summary>通知与存储</summary>
+        <h3>通知</h3><p id="notification-status" role="status">读取中…</p>
+        <button id="notification-toggle" type="button" class="secondary-button" disabled>开启此设备通知</button>
+        <h3>存储</h3><p id="storage-status" role="status">读取中…</p>
+        <p class="muted">仅清理已移除超过 24 小时、从未发送且没有草稿引用的图片。历史图片和请求记录会保留。</p>
+        <div id="cleanup-preview"></div>
+        <button id="cleanup-images" type="button" class="secondary-button" disabled>暂无可清理的图片</button>
+        <button id="cleanup-cache" type="button" class="secondary-button">清理旧版资源与阅读缓存</button>
+        <button id="maintenance-refresh" type="button" class="secondary-button">刷新存储与通知状态</button>
+      </details>
+      <div class="dialog-actions"><button id="diagnostics-refresh" class="secondary-button" type="button">刷新</button><button id="diagnostics-close" type="button">关闭</button></div>
+    </dialog>
+
+    <dialog id="new-thread-dialog" class="modal-dialog setup-dialog">
+      <form id="new-thread-form">
+        <div class="dialog-mark">＋</div>
+        <p class="eyebrow">NEW THREAD</p>
+        <h2>开始新对话</h2>
+        <input id="new-thread-cwd" type="hidden" />
+        <p id="new-thread-target" class="new-thread-target"></p>
+        <label class="dialog-field">
+          <span>权限</span>
+          <select id="new-thread-permission">
+            <option value="readOnly">只读</option>
+            <option value="workspaceWrite" selected>工作区写入</option>
+            <option value="dangerFullAccess">完全访问</option>
+          </select>
+        </label>
+        <p id="new-thread-permission-description" class="permission-description"></p>
+        <div class="dialog-actions">
+          <button id="new-thread-cancel" type="button" class="secondary-button">取消</button>
+          <button id="new-thread-submit" type="submit">创建会话</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="permission-dialog" class="modal-dialog permission-dialog">
+      <form id="permission-form">
+        <div class="dialog-mark">⌁</div>
+        <p class="eyebrow">TURN PERMISSIONS</p>
+        <h2>设置后续对话权限</h2>
+        <label class="permission-option">
+          <input type="radio" name="permission" value="readOnly" />
+          <span><strong>只读</strong><small>可查看文件；写入和命令需确认。</small></span>
+        </label>
+        <label class="permission-option">
+          <input type="radio" name="permission" value="workspaceWrite" />
+          <span><strong>工作区写入</strong><small>可修改当前项目；敏感操作仍需确认。</small></span>
+        </label>
+        <label class="permission-option permission-option-danger">
+          <input type="radio" name="permission" value="dangerFullAccess" />
+          <span><strong>完全访问</strong><small>不询问确认，可访问并修改电脑上的所有文件。</small></span>
+        </label>
+        <p class="permission-description">设置从下一条新回合开始生效，不会改变正在执行的回合。</p>
+        <div class="dialog-actions">
+          <button id="permission-cancel" type="button" class="secondary-button">取消</button>
+          <button type="submit">应用权限</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="writer-dialog" class="modal-dialog writer-dialog">
+      <form method="dialog">
+        <div class="dialog-mark">↗</div>
+        <p class="eyebrow">THREAD IN USE</p>
+        <h2>这个任务正在电脑端使用</h2>
+        <p>可以创建当前对话的副本，并在副本里继续发送刚才的消息。副本默认使用“完全访问”权限，电脑端的原任务不会被修改。</p>
+        <div class="dialog-actions">
+          <button type="submit" value="cancel" class="secondary-button">取消</button>
+          <button type="submit" value="fork">创建副本继续</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/vendor/markdown-it.min.js?v=__BUILD__"></script>
+    <script type="module" src="/app.js?v=__BUILD__"></script>
+  </body>
+</html>

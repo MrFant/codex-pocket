@@ -1,0 +1,24 @@
+{
+  "name": "codex-pocket",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A mobile-first PWA gateway for local Codex CLI and Desktop sessions.",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "NODE_ENV=development node --watch server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check server.mjs && node --check lib/codex-client.mjs && node --check lib/codex-runtime-pool.mjs && node --check lib/local-codex-state.mjs && node --check lib/writer-occupancy.mjs && node --check public/app.js && node --check public/approval-utils.js && node --check public/markdown.js && node --check public/thread-store.js && node --check public/sw.js && node --check lib/request-journal.mjs && node --check public/session-state.js && node --check public/write-operations.js && node --check lib/image-store.mjs && node --check lib/static-assets.mjs && node --check public/image-attachments.js && node --check public/file-diff.js && node --check public/runtime-panel.js && node --check lib/history-pages.mjs && node --check lib/push-notifications.mjs && node --check public/event-stream.js && node --check public/history-window.js && node --check public/app-updates.js && node --check public/maintenance-panel.js",
+    "test:browser": "playwright test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "markdown-it": "14.3.0",
+    "web-push": "3.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}
